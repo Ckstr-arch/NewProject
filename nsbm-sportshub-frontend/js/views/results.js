@@ -1,0 +1,71 @@
+import { api } from '../services/api.js';
+import { store } from '../store.js';
+import { escape, field, bindForm, renderTable, renderPager, statusBadge } from '../components/table.js';
+import { openModal } from '../components/modal.js';
+import { toast } from '../components/toast.js';
+
+const date=value=>new Date(value).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+const inputDate=value=>value?new Date(new Date(value).getTime()-new Date(value).getTimezoneOffset()*60000).toISOString().slice(0,16):'';
+export async function render(container) {
+  const admin=store.get().user?.role==='admin';
+  let page=1,sequence=0,disposed=false,matches=[],tournaments=[];
+  container.innerHTML=`<div class="page-heading"><div><p class="eyebrow">EVERY POINT COUNTS</p><h1>Results & standings</h1><p class="muted">The fixtures, final scores, and teams setting the pace.</p></div>${admin?'<button class="btn btn-primary" id="add-match">+ Add fixture / result</button>':''}</div><div class="toolbar"><label class="search-field"><span class="sr-only">Search teams</span><input type="search" id="match-search" placeholder="Search teams or tournaments…"></label><label><span class="sr-only">Sport</span><select id="match-sport"><option value="">All sports</option></select></label><label><span class="sr-only">Match status</span><select id="match-status"><option value="">All matches</option><option value="completed">Completed</option><option value="scheduled">Scheduled</option></select></label><label><span class="sr-only">Tournament</span><select id="match-tournament"><option value="">All tournaments</option></select></label></div><section id="match-content" aria-live="polite"></section><section class="card standings-card" id="standings-content" aria-live="polite"></section>`;
+  const content=container.querySelector('#match-content'),standingContent=container.querySelector('#standings-content'),search=container.querySelector('#match-search'),sport=container.querySelector('#match-sport'),status=container.querySelector('#match-status'),tournament=container.querySelector('#match-tournament');
+  async function load(){const version=++sequence;
+  content.innerHTML='<div class="loading-state" role="status">Loading fixtures and results…</div>';
+  standingContent.innerHTML='<p class="muted">Select a tournament to see its standings.</p>';
+  try{const response=await api.listMatches({page,limit:8,search:search.value,sport:sport.value,status:status.value,tournamentId:tournament.value||undefined,sort:'startsAt',order:'desc'});
+  if(disposed||version!==sequence)return;
+  matches=response.data;
+  content.innerHTML=renderTable([{label:'Match',render:m=>`<strong>${escape(m.homeTeam)} <span class="muted">vs</span> ${escape(m.awayTeam)}</strong><span class="table-subtitle">${escape(m.tournamentName)} · ${escape(m.sport)}</span>`},{label:'Score',render:m=>m.status==='completed'?`<strong class="score">${escape(m.homeScore)} — ${escape(m.awayScore)}</strong>`:'<span class="muted">To be played</span>'},{label:'When',render:m=>escape(date(m.startsAt))},{label:'Status',render:m=>statusBadge(m.status)},...(admin?[{label:'Manage',render:m=>`<button class="btn btn-secondary" data-edit="${Number(m.id)}">${m.status==='completed'?'Edit result':'Record result'}</button>`}]:[])],matches,{empty:'No fixtures match the selected filters.'})+renderPager(response.pagination);
+      if(tournament.value){const response=await api.standings(Number(tournament.value));
+  if(disposed||version!==sequence)return;
+  standingContent.innerHTML=`<div class="section-heading"><div><p class="eyebrow">THE LEADERBOARD</p><h2>Tournament standings</h2></div><p class="muted small">Win 3 pts · Draw 1 pt</p></div>${renderTable([{label:'Team',key:'team'},{label:'Played',key:'played'},{label:'Won',key:'won'},{label:'Drawn',key:'drawn'},{label:'Lost',key:'lost'},{label:'Points',render:r=>`<strong>${escape(r.points)}</strong>`}],response.data,{empty:'Standings appear after completed matches.'})}`;
+  }
+    }catch(error){if(!disposed&&version===sequence)content.innerHTML=`<div class="error-state" role="alert">${escape(error.message)} <button class="btn btn-secondary" data-retry>Try again</button></div>`;
+  }}
+  function edit(match={}){if(!tournaments.length)return toast('Create a tournament before adding fixtures.','error');
+  const dialog=openModal({title:match.id?'Record or edit match result':'Add a match fixture',content:`<form class="form-grid">${field('tournamentId','Tournament',{value:match.tournamentId||tournaments[0].id,options:tournaments.map(t=>({value:t.id,label:t.name}))})}${field('startsAt','Starts at',{type:'datetime-local',value:inputDate(match.startsAt)})}${field('homeTeam','Home team',{value:match.homeTeam||''})}${field('awayTeam','Away team',{value:match.awayTeam||''})}${field('status','Match status',{value:match.status||'scheduled',options:[{value:'scheduled',label:'Scheduled'},{value:'completed',label:'Completed'}]})}<p class="muted small">Enter both scores for completed matches. Scheduled fixtures keep scores empty.</p>${field('homeScore','Home score',{type:'number',min:0,max:999,required:false,value:match.homeScore??''})}${field('awayScore','Away score',{type:'number',min:0,max:999,required:false,value:match.awayScore??''})}<div class="form-actions"><button class="btn btn-primary" type="submit">Save match</button></div></form>`});
+  const form=dialog.querySelector('form');
+  function scoreState(){const completed=form.elements.status.value==='completed';
+  for(const name of ['homeScore','awayScore']){form.elements[name].required=completed;
+  form.elements[name].disabled=!completed;
+  }}form.elements.status.addEventListener('change',scoreState);
+  scoreState();
+  bindForm(form,data=>{if(data.homeTeam.trim().toLowerCase()===data.awayTeam.trim().toLowerCase()){const error=new Error('Choose two different teams.');
+  error.errors={awayTeam:['Away team must differ from home team.']};
+  throw error;
+  }const body={...data,tournamentId:Number(data.tournamentId),startsAt:new Date(data.startsAt).toISOString(),homeScore:data.status==='completed'?Number(data.homeScore):null,awayScore:data.status==='completed'?Number(data.awayScore):null};
+  return match.id?api.updateMatch(match.id,body):api.createMatch(body);
+  },{success:'Match saved',onSuccess:()=>{dialog.close();
+  load();
+  }});
+  }
+  let timer;
+  search.addEventListener('input',()=>{clearTimeout(timer);
+  timer=setTimeout(()=>{page=1;
+  load();
+  },250);
+  });
+  [sport,status,tournament].forEach(el=>el.addEventListener('change',()=>{page=1;
+  load();
+  }));
+  container.querySelector('#add-match')?.addEventListener('click',()=>edit());
+  content.addEventListener('click',event=>{const button=event.target.closest('button');
+  if(!button)return;
+  if(button.hasAttribute('data-retry'))return load();
+  if(button.dataset.page){page=Number(button.dataset.page);
+  return load();
+  }if(button.dataset.edit){const match=matches.find(m=>m.id===Number(button.dataset.edit));
+  if(match)edit(match);
+  }});
+  try{const response=await api.listTournaments({limit:100});
+  tournaments=response.data;
+  if(!disposed){tournament.insertAdjacentHTML('beforeend',tournaments.map(t=>`<option value="${Number(t.id)}">${escape(t.name)}</option>`).join(''));
+  sport.insertAdjacentHTML('beforeend',[...new Set(tournaments.map(t=>t.sport))].sort().map(s=>`<option value="${escape(s)}">${escape(s)}</option>`).join(''));
+  }}catch{/* Main load displays errors. */}await load();
+  return()=>{disposed=true;
+  ++sequence;
+  clearTimeout(timer);
+  };
+}
