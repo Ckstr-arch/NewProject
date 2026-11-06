@@ -1,0 +1,56 @@
+name: sporthubv2
+
+services:
+  app:
+    container_name: SportHubv2
+    image: sporthubv2:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: nsbm_sportshub
+      DB_USER: sporthubv2
+      DB_PASSWORD: ${DB_PASSWORD:?Run sh docker/setup-env.sh first}
+      APP_ENV: development
+      APP_URL: http://localhost:${APP_PORT:-8080}
+      JWT_SECRET: ${JWT_SECRET:?Run sh docker/setup-env.sh first}
+      JWT_TTL: "3600"
+      CORS_ORIGINS: http://localhost:${APP_PORT:-8080},http://127.0.0.1:${APP_PORT:-8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/api/v1/system/health') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  db:
+    container_name: SportHubv2-db
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: nsbm_sportshub
+      MYSQL_USER: sporthubv2
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Run sh docker/setup-env.sh first}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Run sh docker/setup-env.sh first}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./backend/database/seed.sql:/docker-entrypoint-initdb.d/20-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql --protocol=TCP -h127.0.0.1 -u\"$$MYSQL_USER\" -D\"$$MYSQL_DATABASE\" -Nse 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

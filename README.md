@@ -6,6 +6,21 @@ NSBM SportsHub combines a Vanilla HTML/CSS/ES6 frontend with a plain PHP 8.2+ RE
 - [Manual integration checklist](backend/docs/API_TEST_CHECKLIST.md)
 - [Automated API tests](backend/tests/README.md)
 - [Frontend documentation](nsbm-sportshub-frontend/docs/README.md)
+- [SportHubv2 Docker setup](docker/README.md)
+
+## Run SportHubv2 with Docker
+
+Start Docker Desktop, then run from this repository root:
+
+```sh
+sh docker/setup-env.sh
+docker compose --env-file .env.docker up -d --build --wait
+```
+
+Open **http://localhost:8080**. The app container is named **SportHubv2**. MySQL
+is initialized and seeded automatically on first startup; a named volume
+preserves records across restarts and rebuilds. See [the Docker guide](docker/README.md)
+for updates, ports, and troubleshooting.
 
 ## Run locally
 

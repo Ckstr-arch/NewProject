@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+**/.env
+**/.env.*
+**/config.local.php
+**/__pycache__
+**/*.pyc
+backend/var
+backend/tests
+backend/docs
+nsbm-sportshub-frontend/tests
+nsbm-sportshub-frontend/docs
+**/node_modules
+**/.DS_Store
