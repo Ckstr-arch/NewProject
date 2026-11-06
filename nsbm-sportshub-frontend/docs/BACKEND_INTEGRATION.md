@@ -1,5 +1,7 @@
 # Connect a PHP/MySQL backend
 
+The compatible PHP/MySQL backend is now implemented in [`backend/`](../../backend/README.md). For tested same-origin startup commands and current evidence, use [FRONTEND_CONNECTION.md](../../backend/docs/FRONTEND_CONNECTION.md) and [TEST_RESULTS.md](../../backend/docs/TEST_RESULTS.md). This contract guide remains useful for understanding the protocol.
+
 The frontend and both adapters follow [API_CONTRACT.md](API_CONTRACT.md). Implement that contract before switching the default mock mode. No existing PHP application is assumed to be compatible merely because endpoint names look similar.
 
 ## 1. Implement and serve the backend

@@ -15,14 +15,14 @@ The service author executed this suite during implementation: **93 checks passed
 |---|---|---|
 | `node tests/api-tests.mjs` | 93 passed | Mock data/workflows/authorization/validation and simulated HTTP success/error/CSRF/timeout responses |
 | `python3 tests/browser-smoke.py --browser /usr/bin/chromium` | 42 passed | Actual Chromium UI workflows, CRUD, approvals, profile/session/theme persistence, history, safe text rendering, dialogs/drawer and all nine views at 320, 375, 768, 1024 and 1440px in both themes |
-| `python3 tests/live-browser-smoke.py --browser /usr/bin/chromium` | 13 passed | Actual live-adapter wiring against intercepted synthetic API responses: cookies, CSRF rotation, login/logout, 401/403/422/503, empty 204, malformed response, network failure and timeout; no mock fallback |
+| `python3 tests/live-browser-smoke.py --browser /usr/bin/chromium` | 14 passed | Actual live-adapter wiring against intercepted synthetic API responses: cookies, CSRF rotation, login/logout, 401/403/422/503, empty 204, malformed response, network failure and timeout; no mock fallback |
 | All 24 JavaScript modules | Passed | Node syntax checks and relative module import target checks; actual browser routes also loaded without uncaught JavaScript errors |
 | Architectural scan | Passed | All ten views communicate through api; no direct fetch/localStorage/mock imports in views |
 | Documentation links | Passed | Relative Markdown file targets exist; no external-link or anchor validation claim |
 
 Start the static server from the frontend directory before browser suites. Browser tests are optional developer tooling and require Python Playwright plus Chromium already installed; they introduce no npm/build/runtime dependency. Use `--base-url` and `--browser` to select another local server or executable. Tests create isolated browser contexts and synthetic records; the demo reset applies only to those test contexts. Tests use no real student information.
 
-Remaining unrun checks: real PHP/MySQL integration, deployed HTTPS/CORS/cookie enforcement, other browser engines, human assistive-technology/contrast certification and real backend concurrency. The proposed PHP contract must still be implemented and agreed with the backend team. The simulated HTTP tests do not certify a server implementation.
+Remaining unrun checks: deployed HTTPS/CORS/cookie enforcement, other browser engines, human assistive-technology/contrast certification and real backend concurrency. The agreed PHP contract is implemented in the sibling backend; use its test record for real integration evidence. The simulated HTTP tests do not certify a server implementation.
 
 ## Architecture
 
@@ -93,7 +93,7 @@ Remaining unrun checks: real PHP/MySQL integration, deployed HTTPS/CORS/cookie e
 
 ## Live backend acceptance — separate verification required
 
-No PHP/MySQL backend is implemented by this frontend task. Mock or mocked-fetch tests cannot check these items:
+The PHP/MySQL backend now lives in [`backend/`](../../backend/README.md); its actual verification is recorded in [backend TEST_RESULTS.md](../../backend/docs/TEST_RESULTS.md). Frontend mock or mocked-fetch tests alone cannot check these items:
 
 - [ ] Real session cookie lifecycle, secure attributes and CSRF enforcement.
 - [ ] Real prepared SQL, password hashing and server-side role/ownership checks.

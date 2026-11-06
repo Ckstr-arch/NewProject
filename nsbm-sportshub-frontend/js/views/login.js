@@ -9,5 +9,7 @@ export async function render(container) {
   const form=container.querySelector('form');
   form.elements.email.autocomplete='username'; form.elements.password.autocomplete='current-password';
   container.querySelectorAll('[data-role]').forEach(button=>button.onclick=()=>{const account=DEMO_ACCOUNTS.find(account=>account.role===button.dataset.role);form.elements.email.value=account.email;form.elements.password.value=account.password;form.querySelector('[type="submit"]').focus();});
-  bindForm(form,async data=>{const result=await api.login(data);store.set({user:result.data.user,notifications:result.data.user.notifications});location.hash='/dashboard';},{success:'Welcome to SportsHub.',pending:'Signing in…'});
+  // A failed login returns 401 and clears the HTTP client's token. Refresh it
+  // before each user-initiated attempt; never retry the login POST automatically.
+  bindForm(form,async data=>{await api.session();const result=await api.login(data);store.set({user:result.data.user,notifications:result.data.user.notifications});location.hash='/dashboard';},{success:'Welcome to SportsHub.',pending:'Signing in…'});
 }

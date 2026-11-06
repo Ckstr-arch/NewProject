@@ -54,7 +54,7 @@ Mock sessions are a user-experience simulator; browser data can be edited by any
 
 `http.js` joins the configured base URL with relative paths, serializes JSON, includes cookies and the in-memory CSRF token, and sets a timeout with AbortController. It normalizes empty 204 responses, HTTP errors, invalid responses, network failures and timeouts. HTTP 401 emits `sportshub:unauthorized`; the app clears its user and returns to login. HTTP 403 remains a clear forbidden/CSRF error. Errors carry `status` and an `errors` field map for forms. Writes are never automatically retried.
 
-The CSRF token comes from session/login/logout response data. A rejected token requires a fresh session handshake/reload and an explicit user retry. See [backend integration](BACKEND_INTEGRATION.md).
+The CSRF token comes from session/login/logout response data. The login view refreshes `api.session()` before each explicit sign-in attempt, so a corrected password can be submitted after a prior 401 without retrying the failed POST automatically. A rejected token requires a fresh session handshake/reload and an explicit user retry. See [backend integration](BACKEND_INTEGRATION.md).
 
 ## Rendering and reusable UI
 
