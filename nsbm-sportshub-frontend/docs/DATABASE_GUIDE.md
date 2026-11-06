@@ -1,6 +1,6 @@
 # Proposed MySQL data model
 
-This is a design reference for the separate PHP/MySQL team, not executable SQL or a database implementation. Match the public JSON in [API_CONTRACT.md](API_CONTRACT.md); snake_case SQL columns may be mapped to camelCase JSON at the API boundary. Use InnoDB, utf8mb4, foreign keys, parameterized PDO queries and UTC database timestamps. Convert explicitly when displaying local times.
+This is the relational design reference. Executable SQL is now implemented in [`backend/database/schema.sql`](../../backend/database/schema.sql), with setup and operational-table details in [DATABASE_SETUP.md](../../backend/docs/DATABASE_SETUP.md). Match the public JSON in [API_CONTRACT.md](API_CONTRACT.md); snake_case SQL columns may be mapped to camelCase JSON at the API boundary. Use InnoDB, utf8mb4, foreign keys, parameterized PDO queries and UTC database timestamps. Convert explicitly when displaying local times.
 
 ## Tables and constraints
 

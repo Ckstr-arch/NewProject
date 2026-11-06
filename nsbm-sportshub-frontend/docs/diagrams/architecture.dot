@@ -27,16 +27,16 @@ digraph SportsHub {
   }
 
   subgraph cluster_backend {
-    label="PROPOSED EXTERNAL BACKEND · NOT INCLUDED\nPHP team implements API_CONTRACT.md";
+    label="IMPLEMENTED PHP / MySQL BACKEND · SERVER TRUST BOUNDARY\nSibling backend/ directory · API_CONTRACT.md";
     fontsize=13; fontcolor="#52647c"; color="#8294aa"; penwidth=1.5; style="rounded,dashed,filled"; fillcolor="#f1f4f8"; margin=20;
     php [label="PHP API · CONFIG.API_BASE_URL\nServer-managed sessions + CSRF verification\nRole/ownership enforcement + authoritative validation\nBusiness rules + transactions + prepared PDO queries\nSecure, HttpOnly session cookie in production", style="rounded,dashed,filled", fillcolor="#ffffff", color="#8294aa"];
-    mysql [shape=cylinder, label="MySQL · proposed persistent data\nUsers · clubs · memberships · schedules\nTournaments · registrations · matches\nFacilities/equipment · bookings · participation", style="dashed,filled", color="#8294aa"];
+    mysql [shape=cylinder, label="MySQL · persistent data\nUsers · clubs · memberships · schedules\nTournaments · registrations · matches\nFacilities/equipment · bookings · participation", style="dashed,filled", color="#8294aa"];
     php -> mysql [label="validated queries / transactional writes"];
   }
   people -> entry [label="opens the app over HTTP"];
   http -> php [label="HTTP(S) JSON + session cookies\nX-CSRF-Token on writes", style=dashed, penwidth=1.5, lhead=cluster_backend];
   {rank=same;demo;php;}
-  legend [shape=plain, label="SOLID: request/render/persistence flow   ·   DOTTED: shared-state dependency\nDASHED: proposed external backend and integration boundary\nResponses return through the selected adapter. The UI refreshes only after successful writes.\nThe live adapter's session cookie is browser-managed; live authentication is never stored in localStorage.", fontsize=11, fontcolor="#52647c"];
+  legend [shape=plain, label="SOLID: request/render/persistence flow   ·   DOTTED: shared-state dependency\nDASHED: server-side trust and network boundary\nResponses return through the selected adapter. The UI refreshes only after successful writes.\nThe live adapter's session cookie is browser-managed; live authentication is never stored in localStorage.", fontsize=11, fontcolor="#52647c"];
   demo -> legend [style=invis];
   mysql -> legend [style=invis];
 }

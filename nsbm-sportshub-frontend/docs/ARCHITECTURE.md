@@ -2,15 +2,15 @@
 
 This guide describes the application in **`Ckstr-arch/NewProject/nsbm-sportshub-frontend/`**. It connects the diagrams to the actual files so you can follow a request from a button to its data source.
 
-The implemented application is an HTML/CSS/vanilla JavaScript frontend using native ES modules. Its default mode is **mock**. The PHP API and MySQL database shown below are a **proposed external integration**, to be implemented separately according to [API_CONTRACT.md](API_CONTRACT.md). Their inclusion in a diagram does not mean a live backend has been implemented or connected.
+The implemented application is an HTML/CSS/vanilla JavaScript frontend using native ES modules. Its default mode is **mock**. The PHP API and MySQL database shown below are now implemented in the sibling [`backend/`](../../backend/README.md) directory according to [API_CONTRACT.md](API_CONTRACT.md). They are separate server components across a trust boundary. [Backend test results](../../backend/docs/TEST_RESULTS.md) distinguish verified local PHP/MySQL integration from unrun public deployment checks.
 
 ## 1. System overview
 
-![NSBM SportsHub system architecture: browser initialization, routes and views, shared state, central API, mock/live adapters, browser persistence and the proposed PHP/MySQL backend.](diagrams/architecture.svg)
+![NSBM SportsHub system architecture: browser initialization, routes and views, shared state, central API, mock/live adapters, browser persistence and the implemented PHP/MySQL backend.](diagrams/architecture.svg)
 
 [Open the full-size scalable diagram](diagrams/architecture.svg) · [Editable Graphviz source](diagrams/architecture.dot)
 
-**Reading the diagram:** solid arrows show request, rendering or persistence flow; dotted arrows show shared-state relationships; dashed boxes and the dashed network connection identify the proposed external backend. Responses travel back through the selected adapter. Mock and live are alternative modes; they are not two services called together.
+**Reading the diagram:** solid arrows show request, rendering or persistence flow; dotted arrows show shared-state relationships; dashed boxes and the dashed network connection identify the server-side backend boundary. Responses travel back through the selected adapter. Mock and live are alternative modes; they are not two services called together.
 
 Follow the main path:
 
@@ -38,7 +38,7 @@ Paths below are relative to `nsbm-sportshub-frontend/`.
 | [`endpoints.js`](../js/services/endpoints.js) | One map of **43** public method names to HTTP methods and relative paths | API facade |
 | [`api.js`](../js/services/api.js) | Stable interface used by UI callers; select adapter; substitute/validate IDs; emit unauthorized events | Endpoint map, config, one selected adapter |
 | [`mock-api.js`](../js/services/mock-api.js) | Simulated requests, demo authentication, CRUD, validation, authorization checks, approvals and derived data | Browser localStorage; shared error type |
-| [`http.js`](../js/services/http.js) | Fetch, URL/query construction, cookies, CSRF header, JSON, timeouts, normalized errors and empty 204 responses | Config; proposed PHP API |
+| [`http.js`](../js/services/http.js) | Fetch, URL/query construction, cookies, CSRF header, JSON, timeouts, normalized errors and empty 204 responses | Config; PHP API |
 
 The application has no framework, bundler, npm dependency or JavaScript compilation step. The static server serves files; it does not become a business-logic backend. See [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) for code examples.
 
@@ -71,7 +71,7 @@ The router renders each asynchronously loaded view into a detached container. A 
 
 ## 4. Live session and CSRF flow
 
-This sequence shows a successful **anonymous bootstrap followed by login** in live mode. The PHP participant is the proposed server contract, not an included implementation.
+This sequence shows a successful **anonymous bootstrap followed by login** in live mode. The PHP participant is implemented by the controllers and core modules in `backend/src/`.
 
 ```mermaid
 sequenceDiagram
@@ -79,7 +79,7 @@ sequenceDiagram
     participant UI as app.js / login view
     participant API as api.js
     participant HTTP as http.js
-    participant PHP as Proposed PHP API
+    participant PHP as PHP API
     participant State as store.js
     participant Router as router.js
 
@@ -125,8 +125,8 @@ flowchart TD
     E --> F[api.js selects configured adapter]
     F -->|Mock mode| G[Simulator checks role, resource, duration and overlap]
     F -->|Live mode| H[HTTP POST /bookings with JSON, cookie and CSRF]
-    H --> I[Proposed PHP server verifies identity, rules and resource conflicts]
-    I --> J[Proposed transactional MySQL write]
+    H --> I[PHP server verifies identity, rules and resource conflicts]
+    I --> J[Transactional MySQL write]
     G --> K{Adapter result}
     J --> K
     H -->|Network, timeout or HTTP error| K
@@ -136,7 +136,7 @@ flowchart TD
     M --> B
 ```
 
-The mock adapter saves successful requests in localStorage; the live path requires the PHP team to implement the transaction. Client validation improves feedback, while adapter/server validation is responsible for the operation's final result. A failed request does not permanently change the displayed records, and non-idempotent writes are never silently retried.
+The mock adapter saves successful requests in localStorage; the live path uses a parent-row lock and transaction in `backend/src/Services/BookingService.php`. Client validation improves feedback, while adapter/server validation is responsible for the operation's final result. A failed request does not permanently change the displayed records, and non-idempotent writes are never silently retried.
 
 Both adapters expose `request(method, path, body, query)` and return the same success/list structures:
 
@@ -158,12 +158,12 @@ Rejected requests become `ApiError` instances with `message`, `status`, `errors`
 | Live CSRF token | `http.js` closure | Current page lifetime; acquired/rotated from authentication responses |
 | Theme | localStorage key `sportshub-theme` | Persists across reloads in either mode; appearance only |
 | Mock records and simulated login identity | localStorage key `CONFIG.MOCK_STORAGE_KEY` | Mock mode only; Settings reset restores seed data and clears the simulated session |
-| Live authentication | Browser-managed cookie + proposed PHP server session storage | Server-controlled identity/expiry; production cookie should be HttpOnly and Secure |
-| Real application records | Proposed MySQL server | Backend-owned persistent data; schema/transaction design is documented separately |
+| Live authentication | Browser-managed cookie + PHP server session storage | Server-controlled identity/expiry; production cookie should be HttpOnly and Secure |
+| Real application records | MySQL server | Backend-owned persistent data; schema/transaction design is documented separately |
 
 Mock role checks and local persistence demonstrate workflows, not production security. Anyone controlling the browser can alter demo storage. No passwords or real session tokens are persisted there. `api.resetDemo()` is a mock-only helper; it is **not** one of the 43 backend endpoints.
 
-In live mode, only the HTTP adapter handles application API requests; errors do not trigger a switch to mock data. Views do not call Fetch, read mock storage or know which adapter supplies their records. API-provided text is escaped for display. PHP must still implement input validation, prepared SQL, authorization, CSRF verification, password hashing, appropriate cookies and HTTPS deployment.
+In live mode, only the HTTP adapter handles application API requests; errors do not trigger a switch to mock data. Views do not call Fetch, read mock storage or know which adapter supplies their records. API-provided text is escaped for display. The PHP backend implements input validation, prepared SQL, authorization, CSRF verification, password hashing and cookie settings. Production HTTPS and hosting behavior still need deployment verification.
 
 ## 7. Feature-to-API map
 
@@ -182,7 +182,7 @@ This table is a guide to where each workflow lives. The complete method/path, ro
 | `#/reports` | Membership, participation, tournament and booking report methods | Administrator route only |
 | `#/settings` | `profile`, `updateProfile`, `health`, `logout`, mock-only `resetDemo` | Own profile/preferences; accurately labeled connection status |
 
-The proposed MySQL relationships are already diagrammed in [DATABASE_GUIDE.md](DATABASE_GUIDE.md#relationships). Do not treat browser demo records as an executable database schema.
+The MySQL relationships are diagrammed in [DATABASE_GUIDE.md](DATABASE_GUIDE.md#relationships). Do not treat browser demo records as an executable database schema.
 
 ## 8. Editing and viewing the diagrams
 
@@ -194,4 +194,4 @@ dot -Tsvg docs/diagrams/architecture.dot -o docs/diagrams/architecture.svg
 
 Graphviz is documentation tooling only; it adds no application dependency or build step. The additional flow and sequence diagrams are Mermaid blocks embedded in this file and render in GitHub's Markdown view. Edit their text directly when behavior changes.
 
-Maintain these diagrams together with the source and contract: changing an endpoint, adapter interface, authentication rule or storage boundary should update the relevant diagram and the linked integration guides. Browser and adapter verification scope is recorded in [TEST_CHECKLIST.md](TEST_CHECKLIST.md); simulated live responses do not establish real PHP/MySQL integration.
+Maintain these diagrams together with the source and contract: changing an endpoint, adapter interface, authentication rule or storage boundary should update the relevant diagram and the linked integration guides. Browser and adapter verification scope is recorded in [TEST_CHECKLIST.md](TEST_CHECKLIST.md); simulated live responses alone do not establish real PHP/MySQL integration; the backend test record provides separate database-backed evidence.

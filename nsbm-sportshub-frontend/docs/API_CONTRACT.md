@@ -1,6 +1,6 @@
 # SportsHub API contract v1
 
-This is the proposed contract for a separately implemented PHP/MySQL backend. No backend is included. All paths in `js/services/endpoints.js` are relative to `CONFIG.API_BASE_URL` (default `/api/v1`). Dates are ISO 8601 UTC strings (`2026-11-06T09:00:00.000Z`); IDs are positive integers; text is plain text. JSON requests and responses use UTF-8 and camelCase fields.
+This is the agreed wire contract. Its plain PHP/MySQL implementation is now in [`backend/`](../../backend/README.md); see [backend test results](../../backend/docs/TEST_RESULTS.md) for executed integration evidence and deployment limits. All paths in `js/services/endpoints.js` are relative to `CONFIG.API_BASE_URL` (default `/api/v1`). Dates are ISO 8601 UTC strings (`2026-11-06T09:00:00.000Z`); IDs are positive integers; text is plain text. JSON requests and responses use UTF-8 and camelCase fields.
 
 ## Envelopes and method interface
 
@@ -141,7 +141,7 @@ Match write examples:
 | `PUT /matches/{id}` | Admin | `id` and complete Match write body | Updated Match, 200 | 404 match/tournament; 422 teams/scores/status/date |
 | `GET /tournaments/{id}/standings` | Student/admin | `id`; no body | Standing[], 200 | 404 tournament |
 
-Match responses add `id`, `tournamentName` and `sport`. Example standings: `{"success":true,"data":[{"team":"Computing","played":1,"won":1,"drawn":0,"lost":0,"points":3},{"team":"Business","played":1,"won":0,"drawn":0,"lost":1,"points":0}]}`. Scheduled fixtures contribute no points. This is a generic university league table, not sport-specific tie-break rules. Match deletion is intentionally absent from the proposed endpoint set.
+Match responses add `id`, `tournamentName` and `sport`. Example standings: `{"success":true,"data":[{"team":"Computing","played":1,"won":1,"drawn":0,"lost":0,"points":3},{"team":"Business","played":1,"won":0,"drawn":0,"lost":1,"points":0}]}`. Scheduled fixtures contribute no points. This is a generic university league table, not sport-specific tie-break rules. Match deletion is intentionally absent from the agreed endpoint set.
 
 ### Facilities, equipment and bookings
 

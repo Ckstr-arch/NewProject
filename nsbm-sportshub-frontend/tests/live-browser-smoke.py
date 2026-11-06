@@ -78,8 +78,13 @@ with sync_playwright() as playwright:
                                 'csrfToken': state['token']})
         elif path == '/auth/login':
             state['login_requests'].append({'headers': request.all_headers(), 'body': request.post_data_json})
-            state['signed_in'], state['token'] = True, 'authenticated-csrf'
-            response = success({'user': USER, 'csrfToken': state['token']})
+            if request.all_headers().get('x-csrf-token') != state['token']:
+                status, response = 403, {'success': False, 'message': 'Synthetic CSRF mismatch'}
+            elif request.post_data_json.get('password') != 'SyntheticBrowserOnly!':
+                status, response = 401, {'success': False, 'message': 'The email or password is incorrect.'}
+            else:
+                state['signed_in'], state['token'] = True, 'authenticated-csrf'
+                response = success({'user': USER, 'csrfToken': state['token']})
         elif path == '/dashboard/metrics':
             response = success({'activeClubs': 3, 'memberships': 2, 'upcomingEvents': 1, 'pendingBookings': 0})
         elif path in ['/dashboard/activity', '/dashboard/upcoming']:
@@ -138,7 +143,25 @@ with sync_playwright() as playwright:
         page.locator('#login-form button[type=submit]').click()
         expect(page.locator('main h1')).to_have_text('Dashboard')
 
+    # A rejected login clears the HTTP client's CSRF token. A second, explicitly
+    # submitted attempt must perform a fresh session handshake before its POST.
+    page.get_by_label('University email').fill('synthetic@example.test')
+    page.get_by_label('Password', exact=True).fill('IncorrectBrowserOnly!')
+    page.locator('#login-form button[type=submit]').click()
+    expect(page.locator('#login-form .form-error')).to_contain_text('sign in')
+    expect(page.locator('#login-form button[type=submit]')).to_be_enabled()
+    assert len(state['login_requests']) == 1, 'Failed login must not retry its POST automatically'
+    assert state['signed_in'] is False
+    assert not page.locator('.app-shell').count()
+    failed_login_sessions = state['sessions']
     login()
+    assert state['sessions'] > failed_login_sessions, 'Corrected submission must reacquire CSRF'
+    assert len(state['login_requests']) == 2, 'Exactly one POST is sent for each user submission'
+    calls = page.evaluate('window.liveRequestOptions')
+    login_positions = [i for i, call in enumerate(calls) if call['url'].endswith('/auth/login')]
+    assert calls[login_positions[-1] - 1]['url'].endswith('/auth/session')
+    assert calls[login_positions[-1] - 1]['method'] == 'GET'
+    passed('Live wrong-password 401 preserves the form; corrected user submission reacquires CSRF and succeeds without retrying POST')
     request = state['login_requests'][-1]
     assert request['headers']['x-csrf-token'] == 'anonymous-csrf-1'
     assert request['headers']['content-type'].startswith('application/json')

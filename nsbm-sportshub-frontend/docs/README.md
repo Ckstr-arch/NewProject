@@ -2,7 +2,7 @@
 
 A responsive university sports management frontend built with HTML, CSS and vanilla JavaScript ES modules. Students browse clubs, apply for memberships, register for tournaments, request resources and track participation. Administrators manage clubs, schedules, tournaments, fixtures, results and approval queues, and read reports.
 
-This implementation lives strictly in `Ckstr-arch/NewProject`, under `nsbm-sportshub-frontend/`. It does not require or modify the separately selected backup repository. No PHP backend, MySQL implementation, framework, npm package or JavaScript build step is included.
+This implementation lives strictly in `Ckstr-arch/NewProject`, under `nsbm-sportshub-frontend/`. It does not require or modify the separately selected backup repository. This directory remains a static frontend with no framework, npm package or JavaScript build step. The integrated PHP/MySQL implementation lives in [`backend/`](../../backend/README.md).
 
 ## Run locally
 
@@ -39,7 +39,7 @@ export const CONFIG = Object.freeze({
 });
 ```
 
-Switching `API_MODE` selects the adapter; changing `API_BASE_URL` changes backend deployment location. Views do not change. Mock mode requires neither PHP nor MySQL and visibly labels demo data. Live mode requires a backend implementing [the contract](API_CONTRACT.md), uses PHP session cookies and CSRF headers, and reports errors instead of substituting demo records. A working demo does not establish live integration.
+Switching `API_MODE` selects the adapter; changing `API_BASE_URL` changes backend deployment location. Views do not change. Mock mode requires neither PHP nor MySQL and visibly labels demo data. Live mode uses the PHP backend in [`backend/`](../../backend/README.md), which implements [the contract](API_CONTRACT.md), uses PHP session cookies and CSRF headers, and reports errors instead of substituting demo records. A working demo does not establish live integration.
 
 ## Directory map
 
@@ -112,7 +112,7 @@ nsbm-sportshub-frontend/
 - [Architecture diagrams](ARCHITECTURE.md): system overview, module map, sessions/CSRF, request flow and storage boundaries.
 - [API contract](API_CONTRACT.md): endpoint roles, schemas, JSON, errors and CSRF.
 - [Backend integration](BACKEND_INTEGRATION.md): PHP session setup and deployment checklist.
-- [Database guide](DATABASE_GUIDE.md): proposed normalized MySQL design.
+- [Database guide](DATABASE_GUIDE.md): normalized MySQL design and executable-schema reference.
 - [Frontend guide](FRONTEND_GUIDE.md): module responsibilities and change examples.
 - [Test checklist](TEST_CHECKLIST.md) and [manual cases](../tests/manual-test-cases.md): verification scope and procedures.
 
@@ -120,4 +120,4 @@ The runtime does not send email/push notifications, implement registration/passw
 
 ## Verification
 
-The implementation passed 93 API/HTTP checks, 42 mock-mode browser acceptance checkpoints and 13 synthetic live-mode browser checks. All application views were tested at 320–1440px in both themes. See [the test record](TEST_CHECKLIST.md) for commands and precise limits. No real PHP/MySQL integration is claimed.
+The implementation passed 93 API/HTTP checks, 42 mock-mode browser acceptance checkpoints and 14 synthetic live-mode browser checks. All application views were tested at 320–1440px in both themes. See [the test record](TEST_CHECKLIST.md) for commands and precise limits. These frontend suites use simulated responses. [Backend test results](../../backend/docs/TEST_RESULTS.md) separately record real PHP/MySQL and browser integration.
