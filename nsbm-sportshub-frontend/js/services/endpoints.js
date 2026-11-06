@@ -1,4 +1,6 @@
-// Single endpoint map shared by both adapters. All paths are relative to CONFIG.API_BASE_URL.
+// Standalone demo endpoint map. The current PHP API map is exported below.
+// All paths are relative to CONFIG.API_BASE_URL.
+export { liveEndpoints } from './live-endpoints.js';
 export const endpoints = {
   login: ['POST', '/auth/login'], logout: ['POST', '/auth/logout'], session: ['GET', '/auth/session'],
   metrics: ['GET', '/dashboard/metrics'], activity: ['GET', '/dashboard/activity'], upcoming: ['GET', '/dashboard/upcoming'],

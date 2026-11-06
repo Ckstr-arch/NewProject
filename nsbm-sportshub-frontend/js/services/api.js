@@ -1,5 +1,5 @@
 import { CONFIG } from '../config.js';
-import { endpoints } from './endpoints.js';
+import { endpoints, liveEndpoints } from './endpoints.js';
 import { http, ApiError } from './http.js';
 import { mock } from './mock-api.js';
 
@@ -10,7 +10,8 @@ export const DEMO_ACCOUNTS = Object.freeze([
 const adapter = CONFIG.API_MODE === 'mock' ? mock : CONFIG.API_MODE === 'live' ? http : null;
 if (!adapter) throw new Error('API_MODE must be mock or live.');
 
-export const api = Object.fromEntries(Object.entries(endpoints).map(([name, [method, template]]) => [name, async (...args) => {
+export const api = Object.fromEntries(Object.entries(CONFIG.API_MODE === 'live' ? liveEndpoints : endpoints).map(([name, [method, template]]) => [name, async (...args) => {
+  if (CONFIG.API_MODE === 'live' && name === 'session' && !http.hasToken()) return { data: { user: null, permissions: [] } };
   let path = template;
   if (path.includes(':id')) {
     const suppliedId = args.shift();

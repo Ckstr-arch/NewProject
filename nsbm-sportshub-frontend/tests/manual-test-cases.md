@@ -1,3 +1,5 @@
+> **Standalone demo cases only.** The current PHP/MySQL live test checklist is [TEST_CHECKLIST.md](../docs/TEST_CHECKLIST.md); run `php-backend-browser.py` for live acceptance.
+
 # Manual test cases
 
 Run the frontend over HTTP and use an isolated browser profile with disposable mock data. Each case lists expected behavior, not an assertion that it has already been executed. Record browser/version, viewport, API mode, date and pass/fail evidence for each run. Use public demo identities from [README](../docs/README.md). Never include production cookies/passwords or private student records in screenshots.

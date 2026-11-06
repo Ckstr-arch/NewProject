@@ -1,0 +1,15 @@
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+DirectorySlash Off
+RewriteEngine On
+# Collection URLs also name endpoint directories. Route them without a redirect
+# that could turn a POST into a GET and discard its JSON body.
+RewriteOptions AllowNoSlash
+# Preserve Bearer headers on Apache/FastCGI hosting.
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+# All paths enter the router; private files are never served directly.
+RewriteRule ^ index.php [END,QSA]
+<FilesMatch "^(\.env.*|config\.local\.php|.*\.(sql|md|py))$">
+    Require all denied
+</FilesMatch>

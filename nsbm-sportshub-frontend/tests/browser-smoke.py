@@ -33,6 +33,9 @@ def stamp(days, hour=12):
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=args.browser, headless=True, args=['--no-sandbox'])
     context = browser.new_context(viewport={'width': 1440, 'height': 1000}, reduced_motion='reduce')
+    frontend_root = Path(__file__).resolve().parents[1]
+    demo_config = (frontend_root / 'js/config.js').read_text().replace("API_MODE: 'live'", "API_MODE: 'mock'")
+    context.route('**/js/config.js', lambda route: route.fulfill(status=200, content_type='application/javascript', body=demo_config))
     page = context.new_page()
     failures = []
     page.on('pageerror', lambda error: failures.append(str(error)))

@@ -3,7 +3,7 @@ import { toast } from './toast.js';
 export { escape };
 export function statusBadge(status) {
   const name = String(status ?? 'unknown');
-  const allowed = ['pending','approved','rejected','cancelled','completed','scheduled','attended','registered','training','match','event','facility','equipment','open','full','closed'];
+  const allowed = ['pending','approved','rejected','cancelled','completed','scheduled','attended','registered','training','match','event','facility','equipment','open','full','closed','active','inactive','live','registration_open','upcoming','ongoing','confirmed'];
   return `<span class="badge badge-${allowed.includes(name) ? name : 'neutral'}">${escape(name)}</span>`;
 }
 export function renderTable(columns, rows, { empty = 'No records to show yet.' } = {}) {

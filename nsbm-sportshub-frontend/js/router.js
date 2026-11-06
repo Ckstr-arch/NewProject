@@ -1,4 +1,5 @@
 import { store } from './store.js';
+import { CONFIG } from './config.js';
 import { renderShell, updateNavigation } from './components/navbar.js';
 import { escape } from './utils/format.js';
 const routes = {
@@ -25,16 +26,21 @@ export async function navigate() {
   const main=document.getElementById('main');
   const title=route==='dashboard'?'Overview':route.charAt(0).toUpperCase()+route.slice(1);
   document.title=`${title} · NSBM SportsHub`;
+  if(CONFIG.API_MODE === 'live' && !['login','dashboard','clubs','schedules','tournaments','bookings'].includes(route)){
+    main.innerHTML='<div class="empty-state"><h1>Page unavailable</h1><p>This module belongs to the standalone demo and is outside the current backend API.</p><a class="btn btn-primary" href="#/dashboard">Back to overview</a></div>';store.set({loading:false});return;
+  }
   if(route==='reports'&&user?.role!=='admin'){
     main.innerHTML='<div class="empty-state"><h1>Access denied</h1><p>Reports are available to sports administrators.</p><a class="btn btn-primary" href="#/dashboard">Back to overview</a></div>';store.set({loading:false});return;
   }
   if(!routes[route]){main.innerHTML='<div class="empty-state"><h1>Page not found</h1><p>Let’s get you back in the game.</p><a class="btn btn-primary" href="#/dashboard">Back to overview</a></div>';store.set({loading:false});return;}
   main.innerHTML='<div class="loading-state" role="status"><span class="spinner"></span>Loading your workspace…</div>';
   try{
-    const view=await routes[route](); if(ticket!==generation)return;
+    const view=CONFIG.API_MODE === 'live' && route !== 'login'
+      ? await import(route === 'dashboard' ? './views/live/dashboard.js' : './views/live/resources.js')
+      : await routes[route](); if(ticket!==generation)return;
     // Detached container prevents a slower previous route from replacing the current route.
     const target=document.createElement('div');target.className='view';
-    const teardown=await view.render(target);
+    const teardown=await view.render(target,route);
     if(ticket!==generation){if(typeof teardown==='function')teardown();return;}
     main.replaceChildren(target);cleanup=typeof teardown==='function'?teardown:null;
     if(route!=='login') { main.focus({preventScroll:true});window.scrollTo({top:0}); }

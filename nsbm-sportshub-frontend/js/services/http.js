@@ -10,57 +10,62 @@ export class ApiError extends Error {
   }
 }
 
-// The PHP backend must issue/rotate csrfToken in auth/session, login and logout.
-export function createHttpClient({ baseUrl = CONFIG.API_BASE_URL, timeout = CONFIG.REQUEST_TIMEOUT, fetcher = (...args) => fetch(...args) } = {}) {
-  let csrfToken = null;
+// Bearer tokens are scoped to this browser tab. No database credentials belong here.
+function browserTokenStore() {
+  const key = 'sportshub-access-token';
   return {
+    get() { try { return sessionStorage.getItem(key); } catch { return null; } },
+    set(value) { try { value ? sessionStorage.setItem(key, value) : sessionStorage.removeItem(key); } catch { /* In-memory token below still works. */ } }
+  };
+}
+export function createHttpClient({ baseUrl = CONFIG.API_BASE_URL, timeout = CONFIG.REQUEST_TIMEOUT, fetcher = (...args) => fetch(...args), tokenStore = browserTokenStore() } = {}) {
+  let accessToken = tokenStore.get();
+  return {
+    hasToken: () => Boolean(accessToken),
+    clearToken() { accessToken = null; tokenStore.set(null); },
     async request(method, path, body, query = {}) {
       const params = new URLSearchParams();
       Object.entries(query).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') params.set(key, value);
       });
       const url = `${baseUrl.replace(/\/$/, '')}${path}${params.size ? `?${params}` : ''}`;
-      const writes = !['GET', 'HEAD'].includes(method);
-      if (writes && !csrfToken) throw new ApiError('Your security session is unavailable. Reload and sign in again.', 403, {}, 'CSRF_REQUIRED');
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
       try {
         const headers = { Accept: 'application/json' };
         if (body !== undefined) headers['Content-Type'] = 'application/json';
-        if (writes) headers['X-CSRF-Token'] = csrfToken;
+        if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
         const response = await fetcher(url, {
-          method, headers, credentials: 'include', cache: 'no-store', signal: controller.signal,
+          method, headers, credentials: 'omit', cache: 'no-store', signal: controller.signal,
           ...(body !== undefined ? { body: JSON.stringify(body) } : {})
         });
-        if (response.status === 204) {
-          if (path === '/auth/logout') csrfToken = null;
-          return { success: true, data: null, message: 'Deleted successfully' };
-        }
+        if (response.status === 204) return { data: null };
         const text = await response.text();
-        let payload = null;
-        if (text.trim()) {
-          try { payload = JSON.parse(text); }
-          catch { throw new ApiError(response.ok ? 'The server returned an invalid response.' : 'The server could not complete your request.', response.status, {}, 'INVALID_RESPONSE'); }
-        }
-        if (!response.ok || payload?.success === false) {
-          if (response.status === 401) csrfToken = null;
-          // Do not display arbitrary server HTML, stack traces or internal error details.
+        let payload;
+        try { payload = JSON.parse(text); }
+        catch { throw new ApiError('The server returned an invalid response.', response.status, {}, 'INVALID_RESPONSE'); }
+        if (!response.ok || payload?.error) {
+          if (response.status === 401) this.clearToken();
           const message = response.status >= 500 ? 'The backend is unavailable. Please try again later.'
-            : response.status === 401 ? 'Your session has expired. Please sign in.'
-              : response.status === 403 ? 'Access denied. Check your permissions or refresh your security session.'
-                : typeof payload?.message === 'string' ? payload.message.slice(0, 240) : 'The request could not be completed.';
-          throw new ApiError(message, response.status, payload?.errors);
+            : typeof payload?.error?.message === 'string' ? payload.error.message.slice(0, 240) : 'The request could not be completed.';
+          throw new ApiError(message, response.status, payload?.error?.details, payload?.error?.code);
         }
-        if (!payload || payload.success !== true || !Object.hasOwn(payload, 'data')) throw new ApiError('The server returned an invalid response.', response.status, {}, 'INVALID_RESPONSE');
-        if (payload.data?.csrfToken) csrfToken = payload.data.csrfToken;
+        if (!payload || !Object.hasOwn(payload, 'data')) throw new ApiError('The server returned an invalid response.', response.status, {}, 'INVALID_RESPONSE');
+        if (path === '/auth/login' && typeof payload.data?.access_token === 'string') {
+          accessToken = payload.data.access_token;
+          tokenStore.set(accessToken);
+        }
         return payload;
       } catch (error) {
         if (error instanceof ApiError) throw error;
         if (controller.signal.aborted) throw new ApiError('The request timed out. Please try again.', 0, {}, 'TIMEOUT');
         throw new ApiError('Unable to reach the backend. Check your connection and API URL.', 0, {}, 'NETWORK_ERROR');
-      } finally { clearTimeout(timer); }
+      } finally {
+        clearTimeout(timer);
+        // Stateless logout discards the local JWT; it cannot revoke an issued JWT.
+        if (path === '/auth/logout') this.clearToken();
+      }
     }
   };
 }
-
 export const http = createHttpClient();
