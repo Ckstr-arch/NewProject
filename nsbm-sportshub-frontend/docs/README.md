@@ -48,6 +48,10 @@ nsbm-sportshub-frontend/
 ├── css/
 │   └── styles.css
 ├── docs/
+│   ├── diagrams/
+│   │   ├── architecture.dot
+│   │   └── architecture.svg
+│   ├── ARCHITECTURE.md
 │   ├── API_CONTRACT.md
 │   ├── BACKEND_INTEGRATION.md
 │   ├── DATABASE_GUIDE.md
@@ -105,6 +109,7 @@ nsbm-sportshub-frontend/
 
 ## Read next
 
+- [Architecture diagrams](ARCHITECTURE.md): system overview, module map, sessions/CSRF, request flow and storage boundaries.
 - [API contract](API_CONTRACT.md): endpoint roles, schemas, JSON, errors and CSRF.
 - [Backend integration](BACKEND_INTEGRATION.md): PHP session setup and deployment checklist.
 - [Database guide](DATABASE_GUIDE.md): proposed normalized MySQL design.
