@@ -19,3 +19,16 @@ input,select,textarea{background:var(--surface);color:var(--text);border:1px sol
 .tournament-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px}.tournament-card-top .sport-chip{position:static;background:var(--soft);color:var(--text)}.badge-success{color:#136747;background:#e2f4e9}.small{font-size:11px}.score{white-space:nowrap}:root[data-theme=dark] .danger-text{color:#ff899e!important}@media(max-width:700px){.btn{min-height:44px}.card-actions .btn{min-height:40px}.icon-btn{min-height:42px;min-width:42px}.modal-close{min-width:38px}.row-actions .btn{min-height:38px}}
 :root[data-theme=dark] .field-error,:root[data-theme=dark] .form-error,:root[data-theme=dark] .connection-error{color:#ff899e}:root[data-theme=dark] .connection-ok{color:#6fd6aa}
 .topbar-left{min-width:0;flex:1}.topbar-right{flex-shrink:0}.breadcrumb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.menu-toggle{flex-shrink:0}@media(max-width:450px){.topbar-left{margin-right:6px}}
+
+/* The live API uses the same visual system with compact resource filters. */
+.live-filter { flex-wrap: wrap; align-items: end; }
+.live-filter .search-field { flex: 1 1 240px; }
+.live-filter input:not([type="search"]), .live-filter select { max-width: 190px; }
+.live-filter input[type="date"] { min-width: 155px; }
+.live-filter input[name="sport"] { max-width: 150px; }
+.club-card .row-actions, .tournament-card .row-actions { flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .live-filter > label { flex: 1 1 130px; }
+  .live-filter input:not([type="search"]), .live-filter select { width: 100%; max-width: none; }
+  .live-filter .search-field { flex-basis: 100%; }
+}

@@ -1,7 +1,7 @@
 function preference(key, fallback) {
   try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
 }
-let state = { user: null, route: '', theme: preference('sportshub-theme', 'light'), notifications: true, loading: false };
+let state = { user: null, permissions: [], route: '', theme: preference('sportshub-theme', 'light'), notifications: true, loading: false };
 const listeners = new Set();
 export const store = {
   get: () => ({ ...state }),

@@ -1,0 +1,6 @@
+backend/.env
+backend/config/config.local.php
+backend/var/
+**/__pycache__/
+*.pyc
+.env.docker

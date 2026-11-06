@@ -1,123 +1,59 @@
 # NSBM SportsHub frontend
 
-A responsive university sports management frontend built with HTML, CSS and vanilla JavaScript ES modules. Students browse clubs, apply for memberships, register for tournaments, request resources and track participation. Administrators manage clubs, schedules, tournaments, fixtures, results and approval queues, and read reports.
+Responsive HTML/CSS/native ES6 frontend for the plain PHP/MySQL backend in
+[`backend/`](../../backend/README.md). There is no frontend build step or Node/npm
+runtime dependency. Work remains strictly in `Ckstr-arch/NewProject`.
 
-This implementation lives strictly in `Ckstr-arch/NewProject`, under `nsbm-sportshub-frontend/`. It does not require or modify the separately selected backup repository. This directory remains a static frontend with no framework, npm package or JavaScript build step. The integrated PHP/MySQL implementation lives in [`backend/`](../../backend/README.md).
+## Run the updated application
 
-## Run locally
+1. Follow [`backend/README.md`](../../backend/README.md) to create/import the MySQL
+   database, configure PHP, and start the API at `http://localhost:8000/api/v1`.
+2. Serve `nsbm-sportshub-frontend/` over HTTP at an origin allowed by backend CORS,
+   for example `http://localhost:5500`. Do not open `index.html` through `file:`.
+3. Sign in using a development account from the backend README.
 
-From the repository root:
+`js/config.js` defaults to:
 
-```bash
-cd nsbm-sportshub-frontend
-python3 -m http.server 8080
+```javascript
+API_MODE: 'live',
+API_BASE_URL: 'http://localhost:8000/api/v1'
 ```
 
-Open `http://localhost:8080` in a browser. Use HTTP: native module imports and requests are not reliably supported when opening `index.html` through `file://`. Python is development serving tooling, not an application runtime requirement; an ordinary static server or PHP-compatible web host can serve these files.
+Change the API URL for your host or XAMPP directory. See
+[PHP backend integration](PHP_BACKEND_INTEGRATION.md) for exact contracts,
+Apache/XAMPP URLs, token handling, and the optional live browser test.
 
-Default mock-mode logins:
+The live application provides dashboard metrics, clubs, schedules, tournaments,
+and facility bookings. Students, club managers, sports administrators, and super
+administrators receive controls based on permissions returned by the server.
+All persisted records and authorization decisions belong to PHP/MySQL.
 
-| Role | Email | Public demo password |
+## Explicit standalone demo
+
+Set `API_MODE: 'mock'` to explore the original local simulator. Only this mode
+provides memberships, tournament registrations, results/standings, reports, and
+editable profiles. These modules are outside the current backend specification
+and are hidden and blocked in live mode.
+
+| Demo role | Email | Public simulator password |
 |---|---|---|
 | Student | `student@example.test` | `Student123!` |
 | Admin | `admin@example.test` | `Admin123!` |
 
-These accounts simulate workflows only. Mock authentication is not secure, and no password or production authentication token is persisted in localStorage. Demo records and simulated session identity are stored locally under the configured demo key. Settings offers a confirmed reset to restore seeded demo data. Reset affects this browser origin only and removes local demo edits.
+These are simulator accounts, distinct from the PHP development accounts. Demo
+records and simulated identity remain in local browser storage. Demo mode is
+visibly labeled and does not prove backend security or connectivity.
 
-## Mock and live modes
+## Files and verification
 
-Edit only `js/config.js`:
+- `js/services/api.js` selects the adapter and validates resource IDs.
+- `js/services/live-endpoints.js` defines the current PHP routes.
+- `js/services/http.js` sends bearer tokens and handles JSON/error envelopes.
+- `js/views/live/` renders the current dashboard and four resource families.
+- `js/router.js`, `store.js`, and `components/` manage navigation and shared UI.
+- [Frontend guide](FRONTEND_GUIDE.md) explains the module flow.
+- `tests/php-backend-browser.py` exercises the live workflow against seeded PHP/MySQL.
+- Older mock tests and demo documents are labeled as historical simulator scope.
 
-```javascript
-export const CONFIG = Object.freeze({
-  API_MODE: 'live',
-  API_BASE_URL: '/api/v1',
-  REQUEST_TIMEOUT: 10000,
-  APP_NAME: 'NSBM SportsHub',
-  MOCK_STORAGE_KEY: 'nsbm-sportshub-demo-v1',
-  MOCK_LATENCY: 120
-});
-```
-
-Switching `API_MODE` selects the adapter; changing `API_BASE_URL` changes backend deployment location. Views do not change. Mock mode requires neither PHP nor MySQL and visibly labels demo data. Live mode uses the PHP backend in [`backend/`](../../backend/README.md), which implements [the contract](API_CONTRACT.md), uses PHP session cookies and CSRF headers, and reports errors instead of substituting demo records. A working demo does not establish live integration.
-
-## Directory map
-
-```text
-nsbm-sportshub-frontend/
-├── css/
-│   └── styles.css
-├── docs/
-│   ├── diagrams/
-│   │   ├── architecture.dot
-│   │   └── architecture.svg
-│   ├── ARCHITECTURE.md
-│   ├── API_CONTRACT.md
-│   ├── BACKEND_INTEGRATION.md
-│   ├── DATABASE_GUIDE.md
-│   ├── FRONTEND_GUIDE.md
-│   ├── README.md
-│   └── TEST_CHECKLIST.md
-├── js/
-│   ├── components/
-│   │   ├── modal.js
-│   │   ├── navbar.js
-│   │   ├── table.js
-│   │   └── toast.js
-│   ├── services/
-│   │   ├── api.js
-│   │   ├── endpoints.js
-│   │   ├── http.js
-│   │   └── mock-api.js
-│   ├── utils/
-│   │   ├── format.js
-│   │   └── validation.js
-│   ├── views/
-│   │   ├── bookings.js
-│   │   ├── clubs.js
-│   │   ├── dashboard.js
-│   │   ├── login.js
-│   │   ├── memberships.js
-│   │   ├── reports.js
-│   │   ├── results.js
-│   │   ├── schedules.js
-│   │   ├── settings.js
-│   │   └── tournaments.js
-│   ├── app.js
-│   ├── config.js
-│   ├── router.js
-│   └── store.js
-├── tests/
-│   ├── api-tests.mjs
-│   ├── browser-smoke.py
-│   ├── live-browser-smoke.py
-│   └── manual-test-cases.md
-└── index.html
-```
-
-## Main workflows
-
-- Search, sport filters, sorting and pagination load records through the API.
-- Admin create/edit/delete dialogs wait for successful API responses before updating views.
-- Students apply to clubs; admins approve/reject pending applications.
-- Students register for tournaments within deadline/capacity; admins manage fixtures and scores.
-- Students request facilities or equipment; resource conflicts are rejected; admins review bookings.
-- Role-aware dashboard, student histories and admin reports use adapter-provided records.
-- Settings updates permitted profile fields, theme and notification preferences, checks backend health and supports logout.
-- Hash routes support browser back/forward, session restoration and admin route guards.
-- Accessible labels, keyboard dialogs, focus states and responsive tables support mobile and desktop.
-
-## Read next
-
-- [Architecture diagrams](ARCHITECTURE.md): system overview, module map, sessions/CSRF, request flow and storage boundaries.
-- [API contract](API_CONTRACT.md): endpoint roles, schemas, JSON, errors and CSRF.
-- [Backend integration](BACKEND_INTEGRATION.md): PHP session setup and deployment checklist.
-- [Database guide](DATABASE_GUIDE.md): normalized MySQL design and executable-schema reference.
-- [Frontend guide](FRONTEND_GUIDE.md): module responsibilities and change examples.
-- [Test checklist](TEST_CHECKLIST.md) and [manual cases](../tests/manual-test-cases.md): verification scope and procedures.
-
-The runtime does not send email/push notifications, implement registration/password recovery, or host a production backend. Those capabilities need separately agreed backend endpoints.
-
-## Verification
-
-The implementation passed 93 API/HTTP checks, 42 mock-mode browser acceptance checkpoints and 14 synthetic live-mode browser checks. All application views were tested at 320–1440px in both themes. See [the test record](TEST_CHECKLIST.md) for commands and precise limits. These frontend suites use simulated responses. [Backend test results](../../backend/docs/TEST_RESULTS.md) separately record real PHP/MySQL and browser integration.
+No registration, password recovery, coach role, user management, or image upload
+workflow is part of the current backend specification.
