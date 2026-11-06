@@ -1,6 +1,0 @@
-/.env
-/var/*
-!/var/.gitkeep
-
-__pycache__/
-*.py[cod]
